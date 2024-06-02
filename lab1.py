@@ -63,9 +63,10 @@ def showDirectedGraph(graph):
             G.add_edge(word1, word2, weight=graph[word1][word2])
 
     pos = nx.kamada_kawai_layout(G)
-    nx.draw_networkx(G, pos, with_labels=True, node_color='skyblue', edge_color='r', node_size=1500, font_size=10)
+    plt.figure(figsize=(12,8))
+    nx.draw_networkx(G, pos, with_labels=True, node_color='skyblue', edge_color='r', node_size=170, font_size=8)
     nx.draw_networkx_edge_labels(G, pos, edge_labels=nx.get_edge_attributes(G, 'weight'))
-    plt.savefig("graph.png")
+    plt.savefig("graph.png",dpi=300)
     plt.show()  # 添加这行代码来显示图像
 
 
@@ -105,7 +106,7 @@ def dijkstra(graph, start, end=None):
     return distances, previous_nodes
 
 # Function to find the shortest path between two nodes
-def shortest_path(graph, start, end):
+def calcShortestPath(graph, start, end):
     if start not in graph or end not in graph:
         return -1, []
     distance, path = dijkstra(graph, start, end)
@@ -147,7 +148,7 @@ def display_paths(graph, path, start_node, end_node):
 
 
 
-def all_shortest_paths(graph, start):
+def calcShortestPath_all(graph, start):
     distances, previous_nodes = dijkstra(graph, start)
     all_paths = {}
     nodes=[]
@@ -180,7 +181,6 @@ from PyQt5.QtWidgets import (
     QTextEdit, QPushButton, QFileDialog
 )
 import random
-
 class App(QWidget):
     def __init__(self):
         super().__init__()
@@ -238,7 +238,7 @@ class App(QWidget):
         left_layout.addWidget(self.run_button)
 
         self.walk_button = QPushButton('Random Walk', self)
-        self.walk_button.clicked.connect(self.random_walk)
+        self.walk_button.clicked.connect(self.randomWalk)
         left_layout.addWidget(self.walk_button)
 
         self.stop_button = QPushButton('Stop', self)
@@ -308,14 +308,14 @@ class App(QWidget):
         graph = create_graph(data)
 
         if node_count == 2:
-            distance, paths = shortest_path(graph, start_node, end_node)
+            distance, paths = calcShortestPath(graph, start_node, end_node)
             if distance == -1:
                 self.result_text.setText("No way!")
             else:
                 self.result_text.setText(f"Shortest paths from {start_node} to {end_node}: {paths} with distance {distance}")
                 display_paths(graph, paths, start_node, end_node)
         elif node_count == 1:
-            all_paths = all_shortest_paths(graph, start_node)
+            all_paths = calcShortestPath_all(graph, start_node)
             result = []
             for end, paths in all_paths.items():
                 if paths == "No way":
@@ -324,13 +324,11 @@ class App(QWidget):
                     result.append(f"Paths from {start_node} to {end}: {paths}")
                     display_paths(graph, paths, start_node, end)
             self.result_text.setText("\n".join(result))
-            all_shortest_paths(graph, start_node)
+            calcShortestPath_all(graph, start_node)
         else:
             self.result_text.setText("Invalid input. Please enter 1 or 2.")
 
-    import random
-
-    def random_walk(self):
+    def randomWalk(self):
         self.stop_requested = False
         file_path = self.filepath_input.text().strip()
         data = process_file(file_path)
@@ -391,185 +389,8 @@ class App(QWidget):
         graph = create_graph(data)
         showDirectedGraph(graph)
 
-# Assume that process_file, create_graph, shortest_path, all_shortest_paths,
-# queryBridgeWords, and generateNewText are defined elsewhere
-
 if __name__ == '__main__':
     app = QApplication([])
     window = App()
     window.show()
     app.exec_()
-
-'''
-def dijkstra(graph, start):
-    distances = defaultdict(lambda: 1e10, {node: 1e10 for node in graph})
-    previous_nodes = defaultdict(list)
-    distances[start] = 0
-    pq = [(0, start)]
-    
-    while pq:
-        current_distance, current_node = heapq.heappop(pq)
-        
-        if current_distance > distances[current_node]:
-            continue
-        
-        for neighbor, weight in graph[current_node].items():
-            distance = current_distance + weight
-            
-            if distance < distances[neighbor]:
-                distances[neighbor] = distance
-                previous_nodes[neighbor] = [current_node]
-                heapq.heappush(pq, (distance, neighbor))
-            elif distance == distances[neighbor]:
-                previous_nodes[neighbor].append(current_node)
-    
-    return distances, previous_nodes
-
-def find_all_paths(previous_nodes, start, end):
-    def dfs(current, end, path):
-        if current == end:
-            paths.append(path)
-            return
-        for predecessor in previous_nodes[current]:
-            dfs(predecessor, end, path + [current])
-    
-    paths = []
-    dfs(end, start, [end])
-    return [path[::-1] for path in paths]
-
-def shortest_paths(graph, start, end):
-    if start not in graph or end not in graph:
-        return "No way", []
-    distances, previous_nodes = dijkstra(graph, start)
-    if distances[end] == 1e10:
-        return "No way", []
-    paths = find_all_paths(previous_nodes, start, end)
-    return distances[end], paths
-
-def display_paths(graph, paths, start_node, end_node):
-    G = nx.DiGraph()
-    for node in graph:
-        for neighbor, weight in graph.get(node, {}).items():
-            G.add_edge(node, neighbor, weight=weight)
-    
-    pos = nx.kamada_kawai_layout(G)
-    edges = G.edges(data=True)
-    
-    plt.figure()
-    nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=500, font_size=10)
-    nx.draw_networkx_edge_labels(G, pos, edge_labels={(u, v): d['weight'] for u, v, d in edges})
-    
-    colors = plt.cm.rainbow(np.linspace(0, 1, len(paths)))
-    
-    for i, path in enumerate(paths):
-        print(f"Drawing path {i}: {path}")  # Debugging: Print each path
-        path_edges = [(path[j], path[j + 1]) for j in range(len(path) - 1)]
-        print(f"Path edges {i}: {path_edges}")  # Debugging: Print each path edges
-        nx.draw_networkx_edges(G, pos, edgelist=path_edges, width=2.5, alpha=0.6, edge_color=[colors[i]])
-    
-    nx.draw_networkx_nodes(G, pos, nodelist=[start_node], node_color='green', node_size=700)
-    nx.draw_networkx_nodes(G, pos, nodelist=[end_node], node_color='red', node_size=700)
-    
-    plt.title(f"Shortest Path from {start_node} to {end_node}")
-    plt.show()
-
-def all_shortest_paths(graph, start):
-    distances, previous_nodes = dijkstra(graph, start)
-    all_paths = {}
-    for node in graph:
-        if node == start:
-            continue
-        if distances[node] == 1e10:
-            all_paths[node] = "No way"
-        else:
-            all_paths[node] = find_all_paths(previous_nodes, start, node)
-    
-    return all_paths
-
-def display_all_paths(graph, start):
-    all_paths = all_shortest_paths(graph, start)
-    for end, paths in all_paths.items():
-        if paths == "No way":
-            print(f"No way to reach {end} from {start}")
-        else:
-            print(f"Paths from {start} to {end}: {paths}")
-            display_paths(graph, paths, start, end)
-
-def process_file(filepath):
-    with open(filepath, 'r') as file:
-        return file.read()
-
-class App(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.title = 'Shortest Path Finder'
-        self.initUI()
-    
-    def initUI(self):
-        self.setWindowTitle(self.title)
-        
-        layout = QVBoxLayout()
-        
-        self.input_label = QLabel('Enter number of nodes (1 or 2):', self)
-        layout.addWidget(self.input_label)
-        
-        self.node_count_input = QLineEdit(self)
-        layout.addWidget(self.node_count_input)
-        
-        self.start_node_label = QLabel('Enter start node:', self)
-        layout.addWidget(self.start_node_label)
-        
-        self.start_node_input = QLineEdit(self)
-        layout.addWidget(self.start_node_input)
-        
-        self.end_node_label = QLabel('Enter end node (if applicable):', self)
-        layout.addWidget(self.end_node_label)
-        
-        self.end_node_input = QLineEdit(self)
-        layout.addWidget(self.end_node_input)
-        
-        self.result_text = QTextEdit(self)
-        self.result_text.setReadOnly(True)
-        layout.addWidget(self.result_text)
-        
-        self.run_button = QPushButton('Find Path', self)
-        self.run_button.clicked.connect(self.on_click)
-        layout.addWidget(self.run_button)
-        
-        self.setLayout(layout)
-    
-    def on_click(self):
-        node_count = int(self.node_count_input.text())
-        start_node = self.start_node_input.text().strip()
-        end_node = self.end_node_input.text().strip()
-        
-        data = process_file("./text.txt")
-        graph = create_graph(data)
-        
-        if node_count == 2:
-            distance, paths = shortest_paths(graph, start_node, end_node)
-            if paths == "No way":
-                self.result_text.setText("No way!")
-            else:
-                self.result_text.setText(f"Shortest paths from {start_node} to {end_node}: {paths} with distance {distance}")
-                for path in paths:
-                    display_paths(graph, [path], start_node, end_node)
-        elif node_count == 1:
-            all_paths = all_shortest_paths(graph, start_node)
-            result = []
-            for end, paths in all_paths.items():
-                if paths == "No way":
-                    result.append(f"No way to reach {end} from {start_node}")
-                else:
-                    result.append(f"Paths from {start_node} to {end}: {paths}")
-            self.result_text.setText("\n".join(result))
-            display_all_paths(graph, start_node)
-        else:
-            self.result_text.setText("Invalid input. Please enter 1 or 2.")
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ex = App()
-    ex.show()
-    sys.exit(app.exec_())
-    '''
