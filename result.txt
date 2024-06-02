@@ -1,6 +1,10 @@
+<<<<<<< .merge_file_HcAgNA
 <<<<<<< HEAD
 out -> new -> life -> and -> new -> civilizations Modification in B1
 =======
 out -> new -> life -> and -> new -> civilizations
  Modification in C4
 >>>>>>> C4
+=======
+out -> new -> life -> and -> new -> civilizationsFurther modification in B2
+>>>>>>> .merge_file_1OhpXo
